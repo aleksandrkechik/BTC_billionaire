@@ -35,7 +35,7 @@ object BtcAccount {
   }
 //  //TODO - and of this
   val EntityKey: EntityTypeKey[Command] =
-    EntityTypeKey[Command]("ShoppingCart")
+    EntityTypeKey[Command]("BtcAccount")
 
   final case class BtcTransferred(accountId: String, btcTransaction: BtcTransaction)
     extends Event
@@ -48,7 +48,7 @@ object BtcAccount {
         commandHandler =
           (state, command) => handleCommand(accountId, state, command),
         eventHandler = (state, event) => handleEvent(state, event))
-      .withTagger(_ => Set(projectionTag))
+//      .withTagger(_ => Set(projectionTag))
       .withRetention(RetentionCriteria
         .snapshotEvery(numberOfEvents = 100, keepNSnapshots = 3))
       .onPersistFailure(
@@ -70,14 +70,23 @@ object BtcAccount {
     }
   }
 
-  val tags = Vector.tabulate(5)(i => s"accounts-$i")
+//  val tags = Vector.tabulate(5)(i => s"accounts-$i")
+//  def init(system: ActorSystem[_]): Unit = {
+//    val behaviorFactory: EntityContext[Command] => Behavior[Command] = {
+//      entityContext =>
+//        val i = math.abs(entityContext.entityId.hashCode % tags.size)
+//        val selectedTag = tags(i)
+//        println(entityContext.entityId)
+//        BtcAccount(entityContext.entityId, selectedTag)
+//    }
+//    ClusterSharding(system).init(Entity(EntityKey)(behaviorFactory))
+//  }
+
   def init(system: ActorSystem[_]): Unit = {
-    val behaviorFactory: EntityContext[Command] => Behavior[Command] = {
-      entityContext =>
-        val i = math.abs(entityContext.entityId.hashCode % tags.size)
-        val selectedTag = tags(i)
-        BtcAccount(entityContext.entityId, selectedTag)
-    }
-    ClusterSharding(system).init(Entity(EntityKey)(behaviorFactory))
+    ClusterSharding(system).init(Entity(EntityKey) { entityContext =>
+      println("aa")
+      println(entityContext.entityId)
+      BtcAccount(entityContext.entityId, "a")
+    })
   }
 }
