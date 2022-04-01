@@ -1,0 +1,11 @@
+query {
+  getCurrentBtcAmount(historyQueryBorders: "testBorders") {
+
+  }
+}
+
+mutation{
+  sendBitCoins(transactionDetail: "testDetail") {
+
+  }
+}
