@@ -44,7 +44,7 @@ object Data {
 //  case class AuthenticationException(message: String) extends Exception(message)
 //  case class AuthorisationException(message: String) extends Exception(message)
 
-  case class SecureContext() {
+  case class SecureContext(endpointActor: ActorRef) {
 
   }
     /*def login(userName: String, password: String) = userRepo.authenticate(userName, password) getOrElse (

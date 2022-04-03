@@ -14,7 +14,7 @@ services:
     ports:
       - 5433:5432
     environment:
-      POSTGRES_DB: btc-account
+      POSTGRES_DB: btc-account-owner
       POSTGRES_USER: btc-account-owner
       POSTGRES_PASSWORD: sTr_oNgPwD!!1
 

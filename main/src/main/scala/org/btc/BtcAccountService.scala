@@ -19,12 +19,16 @@ class BtcAccountService(system: ActorSystem[_]) {
   import system.executionContext
 
   def transferBTC(accountID: String, transaction: BtcTransaction): Future[String] = {
-    log.info(s"Trying to transfer ${transaction.amount} bitcoins. DT: ${transaction.dt}")
+    log.info(s"Trying to transfer ${transaction.amount} bitcoins. DT: ${transaction.datetime}")
     val entityRef = sharding.entityRefFor(BtcAccount.EntityKey, accountID)
+    println(s"Ref for account actor - $entityRef")
     val reply: Future[BtcAccount.AccountStatus] =
       entityRef.askWithStatus(BtcAccount.TransferBtc(transaction, _))
     val response = reply.map(accountStatus => accountStatus.toString)
     convertError(response)
+  }
+
+  def getAccountState(accountID: String) = {
   }
 
   private def convertError[T](response: Future[T]): Future[T] = {

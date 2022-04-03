@@ -1,9 +1,16 @@
 package org.btc.frontend.graphql
 
+import akka.pattern.ask
+import akka.remote.transport.ActorTransportAdapter.AskTimeout
 import org.btc.DTOs.{AccountHistory, AccountHistoryHourlyInfo, TransactionReceiveStatus}
+import org.btc.frontend.{BtcTransactionJson, EndpointActorResponse}
 import org.btc.frontend.graphql.Data.SecureContext
 import sangria.macros.derive.deriveObjectType
 import sangria.schema._
+
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.DurationInt
+
 
 
 object Schema {
@@ -26,9 +33,11 @@ object Schema {
   val MutationType = ObjectType("Mutation", fields[SecureContext, Unit](
     Field("sendBitCoins", transactionReceiveStatusType,
       arguments = transactionDetailArg :: Nil,
-      resolve = ctx ⇒
-        TransactionReceiveStatus(s"Transaction Success for time border:" +
-          s" ${ctx.arg(transactionDetailArg)}")
+      resolve = ctx ⇒ {
+        val transactionJSON = ctx.arg(transactionDetailArg)
+        val response: Future[TransactionReceiveStatus] = (ctx.ctx.endpointActor ? BtcTransactionJson(transactionJSON)).mapTo[TransactionReceiveStatus]
+        response
+      }
     )
   ))
 

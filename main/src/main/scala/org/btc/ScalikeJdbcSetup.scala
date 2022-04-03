@@ -3,13 +3,8 @@ package org.btc
 import akka.actor.typed.ActorSystem
 import com.typesafe.config.Config
 import com.zaxxer.hikari.HikariDataSource
-import scalikejdbc.ConnectionPool
-import scalikejdbc.DataSourceCloser
-import scalikejdbc.DataSourceConnectionPool
-import scalikejdbc.config.DBs
-import scalikejdbc.config.NoEnvPrefix
-import scalikejdbc.config.TypesafeConfig
-import scalikejdbc.config.TypesafeConfigReader
+import scalikejdbc.config.{DBs, NoEnvPrefix, TypesafeConfig, TypesafeConfigReader}
+import scalikejdbc.{ConnectionPool, DataSourceCloser, DataSourceConnectionPool}
 
 object ScalikeJdbcSetup {
 
@@ -67,7 +62,7 @@ object ScalikeJdbcSetup {
    * This is only needed to allow ScalikeJdbc to load its logging configurations from the passed Config
    */
   private class DBsFromConfig(val config: Config)
-      extends DBs
+    extends DBs
       with TypesafeConfigReader
       with TypesafeConfig
       with NoEnvPrefix
@@ -76,7 +71,7 @@ object ScalikeJdbcSetup {
    * ScalikeJdbc needs a closer for the DataSource to delegate the closing call.
    */
   private case class HikariCloser(dataSource: HikariDataSource)
-      extends DataSourceCloser {
+    extends DataSourceCloser {
     override def close(): Unit = dataSource.close()
   }
 

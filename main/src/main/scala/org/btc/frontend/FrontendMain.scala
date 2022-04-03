@@ -1,6 +1,6 @@
 package org.btc.frontend
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.Http
 import com.typesafe.config.ConfigFactory
 import org.slf4j
@@ -15,7 +15,7 @@ object FrontendMain extends App {
   private val port = ConfigFactory.load("application.conf").
     getConfig("frontPageInfo").getString("port")
 
-  implicit val system: ActorSystem = ActorSystem("btc-akka")
+  implicit val system: ActorSystem = ActorSystem("endpoint-akka")
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
   private val userRoutes = initRoutes()
@@ -23,6 +23,9 @@ object FrontendMain extends App {
   Http().newServerAt(serverAddress, port.toInt).bindFlow(userRoutes)
   log.info("========= Http-server initialized ==============")
 
-  def initRoutes() =
-    new GraphqlService().route
+  def initRoutes() = {
+    val endpointActor: ActorRef = system.actorOf(EndpointActor.props(system), "endpoint-actor")
+    new GraphqlService(endpointActor).route
+  }
+
 }

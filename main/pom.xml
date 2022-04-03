@@ -33,6 +33,7 @@
         <circe-generic.version>0.13.0</circe-generic.version>
         <sangria-akka-http-circe_2.12.version>0.0.2</sangria-akka-http-circe_2.12.version>
         <scalikejdbc.version>4.0.0</scalikejdbc.version>
+        <postgres.version>42.2.18</postgres.version>
     </properties>
 
 <!--    <dependencyManagement>-->
@@ -72,6 +73,12 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>${slf4j.version}</version>
+        </dependency>
+        <!--        PostgreSQL-->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${postgres.version}</version>
         </dependency>
         <!--        Kafka-->
         <dependency>
@@ -116,6 +123,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-serialization-jackson_${scala.base.version}</artifactId>
+            <version>${akka.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>de.heikoseeberger</groupId>
             <artifactId>akka-http-circe_${scala.base.version}</artifactId>
             <version>1.35.2</version>
@@ -149,6 +162,12 @@
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-persistence-typed_${scala.base.version}</artifactId>
             <version>${akka.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.lightbend.akka</groupId>
+            <artifactId>akka-persistence-jdbc_${scala.base.version}</artifactId>
+            <version>5.0.4</version>
         </dependency>
 
         <dependency>
@@ -212,7 +231,6 @@
             <artifactId>scalikejdbc-config_${scala.base.version}</artifactId>
             <version>${scalikejdbc.version}</version>
         </dependency>
-
         <!-- Circe -->
         <!-- https://mvnrepository.com/artifact/io.circe/circe-generic -->
         <dependency>
@@ -263,6 +281,24 @@
             <groupId>org.sangria-graphql</groupId>
             <artifactId>sangria-akka-http-circe_${scala.base.version}</artifactId>
             <version>${sangria-akka-http-circe_2.12.version}</version>
+        </dependency>
+<!--        &lt;!&ndash; Jackson ZonedDateTime &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>com.fasterxml.jackson.datatype</groupId>-->
+<!--            <artifactId>jackson-datatype-jsr310</artifactId>-->
+<!--            <version>2.13.2</version>-->
+<!--        </dependency>-->
+        <!-- Gson -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>1.7.1</version>
+        </dependency>
+        <!-- Alpakka -->
+        <dependency>
+            <groupId>com.lightbend.akka</groupId>
+            <artifactId>alpakka_${scala.base.version}</artifactId>
+            <version>1.0-M2</version>
         </dependency>
     </dependencies>
 

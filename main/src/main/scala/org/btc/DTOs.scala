@@ -1,9 +1,17 @@
 package org.btc
+import com.fasterxml.jackson.annotation.{JsonCreator, JsonFormat}
+
 import java.time.{LocalDateTime, ZonedDateTime}
 
 object DTOs {
-  case class BtcTransaction(amount: Double, dt: ZonedDateTime)
-  case class BtcStored(amount: Double, dt: LocalDateTime, zoneOffset: Int)
+  case class StringBtcTransaction(datetime: String, amount: Double)
+  case class BtcTransaction
+//  @JsonCreator() (@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "YYYY-MM-DDThh:mm:ssTZD")
+  (datetime: ZonedDateTime, amount: Double)
+//  {
+//    def this(rawTransaction: StringBtcTransaction) =
+//      this(ZonedDateTime.parse(rawTransaction.datetime), rawTransaction.amount)
+//  }
   case class TransactionReceiveStatus(status: String)
   case class AccountStatusQuery(startDt: ZonedDateTime, endDt: ZonedDateTime)
 

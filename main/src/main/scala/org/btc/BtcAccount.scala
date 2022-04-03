@@ -1,7 +1,7 @@
 package org.btc
 
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior, SupervisorStrategy}
-import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityContext, EntityTypeKey}
+import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityTypeKey}
 import akka.pattern.StatusReply
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior, ReplyEffect, RetentionCriteria}
@@ -11,29 +11,33 @@ import java.time.ZonedDateTime
 import scala.concurrent.duration.DurationInt
 
 object BtcAccount {
-  final case class State(btcAmount: Double, latestTransfer: ZonedDateTime) {
+  final case class State(btcAmount: Double, latestTransfer: ZonedDateTime) extends CborSerializable {
 
     def addTransferredMoneyToAccount(btcTransaction: BtcTransaction): State =
-      State(this.btcAmount + btcTransaction.amount, btcTransaction.dt)
+      State(this.btcAmount + btcTransaction.amount, btcTransaction.datetime)
   }
+
   //TODO - think of it!!!!
   object State {
     val empty: State =
       State(1000, ZonedDateTime.now())
   }
-  //TODO - and think of it
-  final case class AccountStatus(btcAmount: Double)
 
-  sealed trait Command
+  //TODO - and think of it
+  final case class AccountStatus(btcAmount: Double) extends CborSerializable
+
+  sealed trait Command extends CborSerializable
+
   final case class TransferBtc(btcTransaction: BtcTransaction,
                                replyTo: ActorRef[StatusReply[AccountStatus]])
     extends Command
 
   //TODO - and of this.
-  sealed trait Event {
+  sealed trait Event extends CborSerializable {
     def accountId: String
   }
-//  //TODO - and of this
+
+  //  //TODO - and of this
   val EntityKey: EntityTypeKey[Command] =
     EntityTypeKey[Command]("BtcAccount")
 
@@ -48,14 +52,14 @@ object BtcAccount {
         commandHandler =
           (state, command) => handleCommand(accountId, state, command),
         eventHandler = (state, event) => handleEvent(state, event))
-//      .withTagger(_ => Set(projectionTag))
+      //      .withTagger(_ => Set(projectionTag))
       .withRetention(RetentionCriteria
         .snapshotEvery(numberOfEvents = 100, keepNSnapshots = 3))
       .onPersistFailure(
         SupervisorStrategy.restartWithBackoff(200.millis, 5.seconds, 0.1))
   }
 
-  def handleCommand(accountId: String, state: State, command: Command): ReplyEffect[Event, State] =
+  def handleCommand(accountId: String, state: State, command: Command): ReplyEffect[Event, State] = {
     command match {
       case TransferBtc(transaction, replyTo) => Effect
         .persist(BtcTransferred(accountId, transaction))
@@ -63,6 +67,7 @@ object BtcAccount {
           StatusReply.Success(AccountStatus(updatedAccount.btcAmount))
         }
     }
+  }
 
   val handleEvent: (State, Event) => State = { (state, event) =>
     event match {
@@ -70,22 +75,21 @@ object BtcAccount {
     }
   }
 
-//  val tags = Vector.tabulate(5)(i => s"accounts-$i")
-//  def init(system: ActorSystem[_]): Unit = {
-//    val behaviorFactory: EntityContext[Command] => Behavior[Command] = {
-//      entityContext =>
-//        val i = math.abs(entityContext.entityId.hashCode % tags.size)
-//        val selectedTag = tags(i)
-//        println(entityContext.entityId)
-//        BtcAccount(entityContext.entityId, selectedTag)
-//    }
-//    ClusterSharding(system).init(Entity(EntityKey)(behaviorFactory))
-//  }
+  //  val tags = Vector.tabulate(5)(i => s"accounts-$i")
+  //  def init(system: ActorSystem[_]): Unit = {
+  //    val behaviorFactory: EntityContext[Command] => Behavior[Command] = {
+  //      entityContext =>
+  //        val i = math.abs(entityContext.entityId.hashCode % tags.size)
+  //        val selectedTag = tags(i)
+  //        println(entityContext.entityId)
+  //        BtcAccount(entityContext.entityId, selectedTag)
+  //    }
+  //    ClusterSharding(system).init(Entity(EntityKey)(behaviorFactory))
+  //  }
 
   def init(system: ActorSystem[_]): Unit = {
     ClusterSharding(system).init(Entity(EntityKey) { entityContext =>
-      println("aa")
-      println(entityContext.entityId)
+      println(s"Account ID - ${entityContext.entityId}")
       BtcAccount(entityContext.entityId, "a")
     })
   }
