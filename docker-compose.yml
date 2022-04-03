@@ -36,8 +36,8 @@ services:
 
   kafka-consumer:
     image: wurstmeister/kafka:2.13-2.7.0
-#    command: bash -c "mkdir -vp /tmp/kafka-logs && /opt/kafka_2.13-2.7.0/bin/kafka-console-consumer.sh --zookeeper zookeeper:2181 --from-beginning --topic-name > /tmp/kafka-logs/topic-name.log"
-    command: bash -c "mkdir -vp /tmp/kafka-logs && /opt/kafka_2.13-2.7.0/bin/kafka-console-consumer.sh --from-beginning --topic test-topic"
+    command: bash -c "mkdir -vp /tmp/kafka-logs && /opt/kafka_2.13-2.7.0/bin/kafka-console-consumer.sh --zookeeper zookeeper:2181 --from-beginning --topic-name > /tmp/kafka-logs/topic-name.log"
+#    command: bash -c "mkdir -vp /tmp/kafka-logs && /opt/kafka_2.13-2.7.0/bin/kafka-console-consumer.sh --zookeeper zookeeper:2181 --bootstrap-server localhost:9092 --from-beginning --topic test-topic"
     ports:
       - "9094:9092"
     links:

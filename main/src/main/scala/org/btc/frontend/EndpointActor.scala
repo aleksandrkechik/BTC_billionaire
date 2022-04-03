@@ -12,7 +12,7 @@ import org.btc.DTOs.{BtcTransaction, StringBtcTransaction, TransactionReceiveSta
 import org.btc.frontend.FrontendMain.system.log
 import org.slf4j.LoggerFactory
 
-import java.time.ZonedDateTime
+import java.time.OffsetDateTime
 
 case class BtcTransactionJson(json: String)
 case class EndpointActorResponse(msg: String)
@@ -35,7 +35,7 @@ class EndpointActor(system: ActorSystem) extends Actor {
       try {
         println(json)
         val stringTransaction = gson.fromJson(json, classOf[StringBtcTransaction])
-        val transaction = BtcTransaction(ZonedDateTime.parse(stringTransaction.datetime), stringTransaction.amount)
+        val transaction = BtcTransaction(OffsetDateTime.parse(stringTransaction.datetime), stringTransaction.amount)
         sendToKafka("btc-transactions", json)
         sender() ! TransactionReceiveStatus("Transaction success")
       } catch {

@@ -10,7 +10,7 @@ import akka.persistence.typed.PersistenceId
 import org.btc.DTOs.BtcTransaction
 import org.slf4j.LoggerFactory
 
-import java.time.ZonedDateTime
+import java.time.OffsetDateTime
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
@@ -31,10 +31,14 @@ object BtcAccountMain extends App {
   val accountPersistentId = PersistenceId(BtcAccount.EntityKey.name, accountId)
   val service = new BtcAccountService(system)
 
-  val response1: Future[String] = service.transferBTC("OOO", BtcTransaction(ZonedDateTime.now(), 1.11))
+  val response1: Future[String] = service.transferBTC("OOO", BtcTransaction(OffsetDateTime.now(), 1.11))
   val accountAfterLastTransaction = Await.result(response1, 10.seconds)
-  val eventsByHour = new BtcAccountHistoryReader(system).getHourTotal(accountPersistentId.id)
+  val historyReader = new BtcAccountHistoryReader(system)
+  historyReader.printEventJournal(accountPersistentId.id)
+  val eventsByHour = historyReader.getHourTotal(accountPersistentId.id)
   println(eventsByHour)
   println(eventsByHour.values.sum)
   println(accountAfterLastTransaction)
+  val hourlyInfo = historyReader.hourlyEventsMapToHistory(eventsByHour)
+  println(hourlyInfo)
 }

@@ -26,7 +26,7 @@ object Schema {
   val QueryType = ObjectType("Query", fields[SecureContext, Unit](
     Field("getAccountTransferHistory", accountHistoryType,
       arguments = historyQueryBorders :: Nil,
-      resolve = ctx => AccountHistory(Seq(AccountHistoryHourlyInfo(1.111, "someDt"), AccountHistoryHourlyInfo(2.222, "anotherDt")))
+      resolve = ctx => AccountHistory(Seq(AccountHistoryHourlyInfo("someDt", 1.111), AccountHistoryHourlyInfo("anotherDt", 2.222)))
   )
   ))
 

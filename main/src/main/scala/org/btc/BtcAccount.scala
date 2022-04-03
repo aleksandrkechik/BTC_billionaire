@@ -7,11 +7,11 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior, ReplyEffect, RetentionCriteria}
 import org.btc.DTOs.BtcTransaction
 
-import java.time.ZonedDateTime
+import java.time.OffsetDateTime
 import scala.concurrent.duration.DurationInt
 
 object BtcAccount {
-  final case class State(btcAmount: Double, latestTransfer: ZonedDateTime) extends CborSerializable {
+  final case class State(btcAmount: Double, latestTransfer: OffsetDateTime) extends CborSerializable {
 
     def addTransferredMoneyToAccount(btcTransaction: BtcTransaction): State =
       State(this.btcAmount + btcTransaction.amount, btcTransaction.datetime)
@@ -20,7 +20,7 @@ object BtcAccount {
   //TODO - think of it!!!!
   object State {
     val empty: State =
-      State(1000, ZonedDateTime.now())
+      State(1000, OffsetDateTime.now())
   }
 
   //TODO - and think of it
@@ -74,18 +74,6 @@ object BtcAccount {
       case BtcTransferred(_, btcTransaction) => state.addTransferredMoneyToAccount(btcTransaction)
     }
   }
-
-  //  val tags = Vector.tabulate(5)(i => s"accounts-$i")
-  //  def init(system: ActorSystem[_]): Unit = {
-  //    val behaviorFactory: EntityContext[Command] => Behavior[Command] = {
-  //      entityContext =>
-  //        val i = math.abs(entityContext.entityId.hashCode % tags.size)
-  //        val selectedTag = tags(i)
-  //        println(entityContext.entityId)
-  //        BtcAccount(entityContext.entityId, selectedTag)
-  //    }
-  //    ClusterSharding(system).init(Entity(EntityKey)(behaviorFactory))
-  //  }
 
   def init(system: ActorSystem[_]): Unit = {
     ClusterSharding(system).init(Entity(EntityKey) { entityContext =>
