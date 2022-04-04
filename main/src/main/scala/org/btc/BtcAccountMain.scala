@@ -1,44 +1,54 @@
 package org.btc
 
-import akka.actor
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.ActorRef
+import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
+import akka.http.scaladsl.Http
 import akka.management.cluster.bootstrap.ClusterBootstrap
 import akka.management.scaladsl.AkkaManagement
 import akka.persistence.typed.PersistenceId
-import org.btc.DTOs.BtcTransaction
+import com.typesafe.config.ConfigFactory
+import org.btc.endpoint.{EndpointActor, GraphqlService}
+import org.btc.repository.{BtcTransactionsRepositoryImpl, ScalikeJdbcSetup}
 import org.slf4j.LoggerFactory
 
-import java.time.OffsetDateTime
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
+import scala.concurrent.ExecutionContextExecutor
 
 object BtcAccountMain extends App {
   val log = LoggerFactory.getLogger(this.getClass)
 
-  val system = {
-    ActorSystem[Nothing](Behaviors.empty, "BtcAccountsService")
-  }
-  implicit val materializer: actor.ActorSystem = system.classicSystem
-  private val sharding: ClusterSharding = ClusterSharding(system)
-  ScalikeJdbcSetup.init(system)
-  AkkaManagement(system).start()
-  ClusterBootstrap(system).start()
-
-  BtcAccount.init(system)
-  val accountId = "OOO"
+  implicit val system = akka.actor.ActorSystem("BtcAccountsService")
+  val typedSystem = system.toTyped
+  implicit val executionContext: ExecutionContextExecutor = system.dispatcher
+  private val sharding: ClusterSharding = ClusterSharding(typedSystem)
+  ScalikeJdbcSetup.init(typedSystem)
+  AkkaManagement(typedSystem).start()
+  ClusterBootstrap(typedSystem).start()
+  BtcAccount.init(typedSystem)
+  val btcTransactionsRepository = new BtcTransactionsRepositoryImpl()
+  BtcTransactionsProjection.init(typedSystem, btcTransactionsRepository)
+  val accountId = ConfigFactory.load("application.conf").
+    getConfig("btc-account").getString("id")
   val accountPersistentId = PersistenceId(BtcAccount.EntityKey.name, accountId)
-  val service = new BtcAccountService(system)
+  val service: BtcAccountService = new BtcAccountService(typedSystem, btcTransactionsRepository)
 
-  val response1: Future[String] = service.transferBTC("OOO", BtcTransaction(OffsetDateTime.now(), 1.11))
-  val accountAfterLastTransaction = Await.result(response1, 10.seconds)
-  val historyReader = new BtcAccountHistoryReader(system)
-  historyReader.printEventJournal(accountPersistentId.id)
-  val eventsByHour = historyReader.getHourTotal(accountPersistentId.id)
-  println(eventsByHour)
-  println(eventsByHour.values.sum)
-  println(accountAfterLastTransaction)
-  val hourlyInfo = historyReader.hourlyEventsMapToHistory(eventsByHour)
-  println(hourlyInfo)
+  initEndpoint()
+
+  def initEndpoint() = {
+    val serverAddress = ConfigFactory.load("application.conf").
+      getConfig("endpointInfo").getString("serverAddress")
+    val port = ConfigFactory.load("application.conf").
+      getConfig("endpointInfo").getString("port")
+
+    val userRoutes = initRoutes(service)
+
+    Http().newServerAt(serverAddress, port.toInt).bindFlow(userRoutes)
+    log.info("========= Http-server initialized ==============")
+  }
+
+  def initRoutes(btcAccountService: BtcAccountService) = {
+    val btcAccountActor: ActorRef = system.actorOf(BtcAccountActor.props(btcAccountService))
+    val endpointActor: ActorRef = system.actorOf(EndpointActor.props(btcAccountActor), "endpoint-actor")
+    new GraphqlService(endpointActor).route
+  }
 }

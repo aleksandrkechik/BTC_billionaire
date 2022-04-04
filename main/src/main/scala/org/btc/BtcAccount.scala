@@ -5,6 +5,7 @@ import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityType
 import akka.pattern.StatusReply
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior, ReplyEffect, RetentionCriteria}
+import com.typesafe.config.ConfigFactory
 import org.btc.DTOs.BtcTransaction
 
 import java.time.OffsetDateTime
@@ -14,16 +15,17 @@ object BtcAccount {
   final case class State(btcAmount: Double, latestTransfer: OffsetDateTime) extends CborSerializable {
 
     def addTransferredMoneyToAccount(btcTransaction: BtcTransaction): State =
-      State(this.btcAmount + btcTransaction.amount, btcTransaction.datetime)
+      State(btcTransaction.amount, btcTransaction.datetime)
+
+    def getBtcAmount(): Double =
+      this.btcAmount
   }
 
-  //TODO - think of it!!!!
   object State {
     val empty: State =
       State(1000, OffsetDateTime.now())
   }
 
-  //TODO - and think of it
   final case class AccountStatus(btcAmount: Double) extends CborSerializable
 
   sealed trait Command extends CborSerializable
@@ -32,12 +34,10 @@ object BtcAccount {
                                replyTo: ActorRef[StatusReply[AccountStatus]])
     extends Command
 
-  //TODO - and of this.
   sealed trait Event extends CborSerializable {
     def accountId: String
   }
 
-  //  //TODO - and of this
   val EntityKey: EntityTypeKey[Command] =
     EntityTypeKey[Command]("BtcAccount")
 
@@ -52,7 +52,7 @@ object BtcAccount {
         commandHandler =
           (state, command) => handleCommand(accountId, state, command),
         eventHandler = (state, event) => handleEvent(state, event))
-      //      .withTagger(_ => Set(projectionTag))
+            .withTagger(_ => Set(projectionTag))
       .withRetention(RetentionCriteria
         .snapshotEvery(numberOfEvents = 100, keepNSnapshots = 3))
       .onPersistFailure(
@@ -61,8 +61,9 @@ object BtcAccount {
 
   def handleCommand(accountId: String, state: State, command: Command): ReplyEffect[Event, State] = {
     command match {
-      case TransferBtc(transaction, replyTo) => Effect
-        .persist(BtcTransferred(accountId, transaction))
+      case TransferBtc(transaction, replyTo) =>
+        Effect
+        .persist(BtcTransferred(accountId, calculateEventImpact(state, transaction)))
         .thenReply(replyTo) { updatedAccount =>
           StatusReply.Success(AccountStatus(updatedAccount.btcAmount))
         }
@@ -71,14 +72,19 @@ object BtcAccount {
 
   val handleEvent: (State, Event) => State = { (state, event) =>
     event match {
-      case BtcTransferred(_, btcTransaction) => state.addTransferredMoneyToAccount(btcTransaction)
+      case BtcTransferred(_, btcTransaction) =>
+        state.addTransferredMoneyToAccount(btcTransaction)
     }
   }
 
+  private def calculateEventImpact(state: State, transaction: BtcTransaction) =
+    transaction.copy(amount = transaction.amount + state.getBtcAmount())
+
   def init(system: ActorSystem[_]): Unit = {
     ClusterSharding(system).init(Entity(EntityKey) { entityContext =>
-      println(s"Account ID - ${entityContext.entityId}")
-      BtcAccount(entityContext.entityId, "a")
+      BtcAccount(entityContext.entityId, ConfigFactory.load("application.conf").
+    getConfig("btc-account").getString("id"))
     })
   }
+
 }

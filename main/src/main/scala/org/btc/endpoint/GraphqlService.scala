@@ -1,12 +1,11 @@
-package org.btc.frontend
+package org.btc.endpoint
 
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.util.Timeout
-import org.btc.frontend.graphql.Data
-import org.btc.frontend.graphql.Schema
+import org.btc.endpoint.graphql.{Data, Schema}
 import org.slf4j.LoggerFactory
 import sangria.execution.{ErrorWithResolver, Executor, QueryAnalysisError}
 import sangria.http.akka.circe.CirceHttpSupport
@@ -16,14 +15,13 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
-class GraphqlService(endpointActor: ActorRef)(implicit executionContext: ExecutionContext) extends
+class GraphqlService(endPointActor: ActorRef)(implicit executionContext: ExecutionContext) extends
   CirceHttpSupport {
   val log = LoggerFactory.getLogger(this.getClass.getName)
   implicit val timeout: Timeout = Timeout(2 seconds)
 
   import sangria.marshalling.circe._
 
-//  override
   def route: Route = graphqlRoute
 
   val schema = Schema.schema
@@ -38,7 +36,7 @@ class GraphqlService(endpointActor: ActorRef)(implicit executionContext: Executi
                 val graphQLResponse = Executor.execute(
                   schema = schema,
                   queryAst = req.query,
-                  Data.SecureContext(endpointActor),
+                  Data.SecureContext(endPointActor),
                   variables = req.variables,
                   operationName = req.operationName,
                   middleware = middleware,

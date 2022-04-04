@@ -4,6 +4,7 @@ package org.btc
 import akka.actor.typed.ActorSystem
 import akka.projection.eventsourced.EventEnvelope
 import akka.projection.jdbc.scaladsl.JdbcHandler
+import org.btc.repository.{BtcTransactionsRepository, ScalikeJdbcSession}
 import org.slf4j.LoggerFactory
 
 import java.sql.Timestamp
@@ -31,7 +32,7 @@ class BtcTransactionsProjectionHandler(
   private def logTransfer(
       session: ScalikeJdbcSession,
       amount: Double): Unit = {
-    log.info(s"${amount} BTC was transferred")
+    log.info(s"BTC transaction was received. Current total:${amount} BTC")
   }
 
 }

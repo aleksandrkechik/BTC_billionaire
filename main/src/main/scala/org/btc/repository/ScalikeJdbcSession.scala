@@ -1,4 +1,4 @@
-package org.btc
+package org.btc.repository
 
 import akka.japi.function.Function
 import akka.projection.jdbc.JdbcSession

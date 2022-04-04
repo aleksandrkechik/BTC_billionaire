@@ -1,19 +1,19 @@
-package org.btc.frontend.graphql
+package org.btc.endpoint.graphql
 
 import akka.pattern.ask
-import akka.remote.transport.ActorTransportAdapter.AskTimeout
+import akka.util.Timeout
+import org.btc.BtcAccountMain.executionContext
 import org.btc.DTOs.{AccountHistory, AccountHistoryHourlyInfo, TransactionReceiveStatus}
-import org.btc.frontend.{BtcTransactionJson, EndpointActorResponse}
-import org.btc.frontend.graphql.Data.SecureContext
+import org.btc.endpoint.graphql.Data.SecureContext
+import org.btc.endpoint.{AccountStatusRequestJson, BtcTransactionJson}
 import sangria.macros.derive.deriveObjectType
-import sangria.schema._
+import sangria.schema.{Argument, Field, ObjectType, StringType, fields}
 
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration.DurationInt
-
-
+import java.util.concurrent.TimeUnit
 
 object Schema {
+
+  implicit private val timeout: Timeout = Timeout(10, TimeUnit.SECONDS)
 
   implicit val accountHistoryHourlyInfo = deriveObjectType[Unit, AccountHistoryHourlyInfo]()
   implicit val accountHistoryType = deriveObjectType[Unit, AccountHistory]()
@@ -26,8 +26,12 @@ object Schema {
   val QueryType = ObjectType("Query", fields[SecureContext, Unit](
     Field("getAccountTransferHistory", accountHistoryType,
       arguments = historyQueryBorders :: Nil,
-      resolve = ctx => AccountHistory(Seq(AccountHistoryHourlyInfo("someDt", 1.111), AccountHistoryHourlyInfo("anotherDt", 2.222)))
-  )
+      resolve = ctx => {
+        val transactionJSON = ctx.arg(historyQueryBorders)
+        val response = (ctx.ctx.endPointActor ? AccountStatusRequestJson(transactionJSON)).mapTo[AccountHistory]
+        response
+      }
+    )
   ))
 
   val MutationType = ObjectType("Mutation", fields[SecureContext, Unit](
@@ -35,7 +39,8 @@ object Schema {
       arguments = transactionDetailArg :: Nil,
       resolve = ctx ⇒ {
         val transactionJSON = ctx.arg(transactionDetailArg)
-        val response: Future[TransactionReceiveStatus] = (ctx.ctx.endpointActor ? BtcTransactionJson(transactionJSON)).mapTo[TransactionReceiveStatus]
+        val response = (ctx.ctx.endPointActor ? BtcTransactionJson(transactionJSON)).
+          mapTo[String].map(e => TransactionReceiveStatus(e))
         response
       }
     )

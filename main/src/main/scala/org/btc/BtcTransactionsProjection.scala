@@ -9,8 +9,10 @@ import akka.persistence.query.Offset
 import akka.projection.eventsourced.EventEnvelope
 import akka.projection.eventsourced.scaladsl.EventSourcedProvider
 import akka.projection.jdbc.scaladsl.JdbcProjection
-import akka.projection.scaladsl.{ ExactlyOnceProjection, SourceProvider }
-import akka.projection.{ ProjectionBehavior, ProjectionId }
+import akka.projection.scaladsl.{ExactlyOnceProjection, SourceProvider}
+import akka.projection.{ProjectionBehavior, ProjectionId}
+import com.typesafe.config.ConfigFactory
+import org.btc.repository.{BtcTransactionsRepository, ScalikeJdbcSession}
 
 object BtcTransactionsProjection {
   
@@ -31,7 +33,8 @@ object BtcTransactionsProjection {
                                    system: ActorSystem[_],
                                    repository: BtcTransactionsRepository)
       : ExactlyOnceProjection[Offset, EventEnvelope[BtcAccount.Event]] = {
-    val tag = "btc-account"
+    val tag = ConfigFactory.load("application.conf").
+    getConfig("btc-account").getString("id")
 
     val sourceProvider
         : SourceProvider[Offset, EventEnvelope[BtcAccount.Event]] =

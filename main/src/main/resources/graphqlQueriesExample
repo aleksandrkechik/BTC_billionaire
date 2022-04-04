@@ -1,11 +1,11 @@
 query {
-  getCurrentBtcAmount(historyQueryBorders: "testBorders") {
-
+  getAccountTransferHistory(historyQueryBorders: "{\"startDatetime\": \"2011-10-05T10:48:01+00:00\", \"endDatetime\": \"2023-10-05T18:48:02+00:00\"}") {
+		history
   }
 }
 
 mutation{
-  sendBitCoins(transactionDetail: "testDetail") {
-
+  sendBitCoins(transactionDetail: "{ \"datetime\": \"2022-04-04T13:57:05+03:00\", \"amount\": 10 }") {
+    status
   }
 }

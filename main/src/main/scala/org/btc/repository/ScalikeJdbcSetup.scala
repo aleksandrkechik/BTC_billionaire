@@ -1,4 +1,4 @@
-package org.btc
+package org.btc.repository
 
 import akka.actor.typed.ActorSystem
 import com.typesafe.config.Config
